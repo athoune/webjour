@@ -12,11 +12,43 @@ import socket
 import sys
 import pybonjour
 
-regtypes = ["_http._tcp.", "_https._tcp.", "_webdav._tcp.", "_webdavs._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp."]#sys.argv[1]
+regtypes = ["_http._tcp.", "_https._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp.", "_ipp._tcp.", "_webdav._tcp.", "_webdavs._tcp."]#sys.argv[1]
 timeout = 5
 resolved = []
 queried = []
 services = {}
+ips = {}
+
+class Page(object):
+	def __init__(self):
+		self.step = 0
+		self.header = """
+<html><head></head><body>
+<ul>
+"""
+		self.footer = """
+		</ul>
+		</body></html>
+"""
+	def __iter__(self):
+		global services
+		global ips
+		if self.step == 0:
+			self.step += 1
+			yield self.header
+		if self.step == 1:
+			for key, value in services.iteritems():
+				print ips
+				if value['hosttarget'].endswith('.local.') and value['hosttarget'] in ips:
+					host = ips[value['hosttarget']]
+				else:
+					host = value['hosttarget']
+				service = value['fullname'].split('.')[-4][1:]
+				yield ('<li> [%s] <a href="%s://%s:%i">%s</a></li>' % (service, service, host, value['port'], value['hosttarget'])).encode('utf8')
+		if self.step == 2:
+			self.step += 1
+			yield self.footer
+		
 
 class WebJour(threading.Thread):
 	def __init__(self, name="Webjour"):
@@ -26,16 +58,17 @@ class WebJour(threading.Thread):
 		setup_testing_defaults(environ)
 
 		status = '200 OK'
-		headers = [('Content-type', 'text/plain')]
+		headers = [('Content-type', 'text/html')]
 
 		start_response(status, headers)
 
 		#ret = ["%s: %s\n" % (key, value)
 	  #         for key, value in environ.iteritems()]
 		global services
-		print services
-		return [("%s => %s:%i\n" % (key, value['hosttarget'], value['port'])).encode('utf8')
-	           for key, value in services.iteritems()]
+		
+		#return [("%s => %s:%i\n" % (key, value['hosttarget'], value['port'])).encode('utf8')
+	    #       for key, value in services.iteritems()]
+		return Page()
 	def run(self):
 		httpd = make_server('', 8000, self.web)
 		print "Serving on port 8000..."
@@ -52,6 +85,8 @@ def query_record_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
 						  rrtype, rrclass, rdata, ttl):
 	if errorCode == pybonjour.kDNSServiceErr_NoError:
 		print '	 IP			=', socket.inet_ntoa(rdata)
+		global ips
+		ips[fullname] = socket.inet_ntoa(rdata)
 		queried.append(True)
 
 def resolve_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
@@ -87,7 +122,7 @@ def browse_callback(sdRef, flags, interfaceIndex, errorCode, serviceName,
 	if errorCode != pybonjour.kDNSServiceErr_NoError:
 		return
 	if not (flags & pybonjour.kDNSServiceFlagsAdd):
-		print 'Service removed'
+		print 'Service removed %' % serviceName
 		return
 	print 'Service added; resolving'
 	resolve_sdRef = pybonjour.DNSServiceResolve(
