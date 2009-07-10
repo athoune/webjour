@@ -11,6 +11,7 @@ import select
 import socket
 import sys
 import httplib
+import os.path
 
 import pybonjour
 
@@ -66,6 +67,13 @@ class Page(object):
 
 def status(code):
 	return "%i %s" % (code, httplib.responses[code])
+	
+MIME = {
+	'jpg': 'image/jpg',
+	'png': 'image/png',
+	'css': 'text/css',
+	'js': 'application/x-javascript'
+}
 
 class WebJour(threading.Thread):
 	def __init__(self, name="Webjour"):
@@ -79,10 +87,11 @@ class WebJour(threading.Thread):
 			headers.append(('Content-type', 'text/html'))
 			start_response(status(httplib.OK), headers)
 			return Page()
-		if url.path == '/bonjouricon.jpg':
-			headers.append(('Content-type', 'image/jpg'))
+		path = 'static%s' % url.path
+		if os.path.isfile(path):
+			headers.append(('Content-type', MIME[url.path.split('.')[-1]]))
 			start_response(status(httplib.OK), headers)
-			return [open('static/bonjouricon.jpg','rb').read()]
+			return [open(path,'rb').read()]
 		start_response(status(httplib.NOT_FOUND), headers)
 		#ret = ["%s: %s\n" % (key, value)
 	  #         for key, value in environ.iteritems()]
