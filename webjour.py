@@ -3,6 +3,8 @@
 
 __author__ = "Mathieu Lecarme <mathieu@garambrogne.net>"
 
+#http://www.simonwheatley.co.uk/2008/04/06/avahi-finder-icons/
+
 from wsgiref.simple_server import make_server
 from wsgiref.util import setup_testing_defaults, request_uri
 import threading
@@ -12,7 +14,10 @@ import socket
 import sys
 import httplib
 import os.path
-import json
+try:
+	import simplejson as json
+except ImportError:
+	import json
 
 import pybonjour
 
