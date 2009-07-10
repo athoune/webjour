@@ -12,10 +12,11 @@ import socket
 import sys
 import httplib
 import os.path
+import json
 
 import pybonjour
 
-regtypes = ["_http._tcp.", "_https._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp.", "_ipp._tcp.", "_smb._tcp.", "_webdav._tcp.", "_webdavs._tcp."]
+regtypes = ["_http._tcp.", "_https._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp.", "_device-info._tcp.", "_ipp._tcp.", "_smb._tcp.", "_webdav._tcp.", "_webdavs._tcp."]
 timeout = 5
 resolved = []
 queried = []
@@ -31,48 +32,35 @@ def service_to_url(service):
 def clean_bonjour_name(bjr):
 	return '.'.join(bjr.split('.')[:-4]).replace('\\032', ' ').replace('\\','')
 
-class Page(object):
-	def __init__(self):
-		self.step = 0
-		self.header = """
-<html><head>
-<link rel="shortcut icon" type="image/png" href="bonjouricon.jpg" />
-<title>Webjour</title>
-</head><body>
-<ul>
-"""
-		self.footer = """
-		</ul>
-		</body></html>
-"""
-	def __iter__(self):
-		global services
-		global ips
-		if self.step == 0:
-			self.step += 1
-			yield self.header
-		if self.step == 1:
-			for key, value in services.iteritems():
-				print ips
-				if value['hosttarget'].endswith('.local.') and value['hosttarget'] in ips:
-					host = ips[value['hosttarget']]
-				else:
-					host = value['hosttarget']
-				service = value['fullname'].split('.')[-4][1:]
-				yield ('<li> [%s] <a href="%s://%s:%i">%s</a></li>' % (service, service_to_url(service), host, value['port'], clean_bonjour_name(value['fullname']))).encode('utf8')
-		if self.step == 2:
-			self.step += 1
-			yield self.footer
-		
+def snapshot():
+	global services
+	global ips
+	snapshots = []
+	for key, value in services.iteritems():
+		print ips
+		if value['hosttarget'].endswith('.local.') and value['hosttarget'] in ips:
+			host = ips[value['hosttarget']]
+		else:
+			host = value['hosttarget']
+		service = value['fullname'].split('.')[-4][1:]
+		snapshots.append({
+			'service':service,
+			'scheme' : service_to_url(service),
+			'host'   : host,
+			'port'   : value['port'],
+			'name'   : clean_bonjour_name(value['fullname']),
+		})
+	return snapshots
 
 def status(code):
 	return "%i %s" % (code, httplib.responses[code])
 	
 MIME = {
-	'jpg': 'image/jpg',
-	'png': 'image/png',
-	'css': 'text/css',
-	'js': 'application/x-javascript'
+	'jpg' : 'image/jpg',
+	'png' : 'image/png',
+	'css' : 'text/css',
+	'js'  : 'application/x-javascript',
+	'html': 'text/html'
 }
 
 class WebJour(threading.Thread):
@@ -83,13 +71,16 @@ class WebJour(threading.Thread):
 		setup_testing_defaults(environ)
 		url = urlparse(request_uri(environ))
 		headers = []
-		if url.path == '/':
-			headers.append(('Content-type', 'text/html'))
+		if url.path == '/webjour':
+			headers.append(('Content-type', MIME['js']))
 			start_response(status(httplib.OK), headers)
-			return Page()
-		path = 'static%s' % url.path
+			return [json.dumps(snapshot())]
+		if url.path == '/':
+			path = 'static/index.html'
+		else:
+			path = 'static%s' % url.path
 		if os.path.isfile(path):
-			headers.append(('Content-type', MIME[url.path.split('.')[-1]]))
+			headers.append(('Content-type', MIME[path.split('.')[-1]]))
 			start_response(status(httplib.OK), headers)
 			return [open(path,'rb').read()]
 		start_response(status(httplib.NOT_FOUND), headers)
