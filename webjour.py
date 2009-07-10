@@ -12,12 +12,18 @@ import socket
 import sys
 import pybonjour
 
-regtypes = ["_http._tcp.", "_https._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp.", "_ipp._tcp.", "_webdav._tcp.", "_webdavs._tcp."]#sys.argv[1]
+regtypes = ["_http._tcp.", "_https._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp.", "_ipp._tcp.", "_smb._tcp.", "_webdav._tcp.", "_webdavs._tcp."]
 timeout = 5
 resolved = []
 queried = []
 services = {}
 ips = {}
+
+def service_to_url(service):
+	services = {'rfb':'vnc', 'afpoverctp':'afp'}
+	if service in services:
+		return services[service]
+	return service
 
 class Page(object):
 	def __init__(self):
@@ -44,7 +50,7 @@ class Page(object):
 				else:
 					host = value['hosttarget']
 				service = value['fullname'].split('.')[-4][1:]
-				yield ('<li> [%s] <a href="%s://%s:%i">%s</a></li>' % (service, service, host, value['port'], value['hosttarget'])).encode('utf8')
+				yield ('<li> [%s] <a href="%s://%s:%i">%s</a></li>' % (service, service_to_url(service), host, value['port'], value['hosttarget'])).encode('utf8')
 		if self.step == 2:
 			self.step += 1
 			yield self.footer
@@ -160,5 +166,6 @@ try:
 	except KeyboardInterrupt:
 		print "Stop!"
 		web.join()
+		sys.exit()
 finally:
 	browse_sdRef.close()
