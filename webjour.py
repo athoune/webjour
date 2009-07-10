@@ -12,13 +12,16 @@ import socket
 import sys
 import pybonjour
 
-regtype	 = "_http._tcp."#sys.argv[1]
-timeout	 = 5
+regtypes = ["_http._tcp.", "_https._tcp.", "_webdav._tcp.", "_webdavs._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp."]#sys.argv[1]
+timeout = 5
 resolved = []
 queried = []
 services = {}
 
 class WebJour(threading.Thread):
+	def __init__(self, name="Webjour"):
+		self._stopevent = threading.Event()
+		threading.Thread.__init__(self, name = name)
 	def web(self, environ, start_response):
 		setup_testing_defaults(environ)
 
@@ -33,11 +36,14 @@ class WebJour(threading.Thread):
 		print services
 		return [("%s => %s:%i\n" % (key, value['hosttarget'], value['port'])).encode('utf8')
 	           for key, value in services.iteritems()]
-
 	def run(self):
 		httpd = make_server('', 8000, self.web)
 		print "Serving on port 8000..."
-		httpd.serve_forever()
+		while not self._stopevent.isSet():
+			httpd.handle_request()
+	def join(self, timeout=None):
+		self._stopevent.set()
+		threading.Thread.join(self,timeout)
 
 web = WebJour()
 web.start()
@@ -58,13 +64,11 @@ def resolve_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
 	print '	 port		=', port
 	global services
 	services[fullname] = {"fullname":fullname, "hosttarget":hosttarget, "port":port, "txtRecord":txtRecord}
-
-	query_sdRef = \
-		pybonjour.DNSServiceQueryRecord(interfaceIndex = interfaceIndex,
-										fullname = hosttarget,
-										rrtype = pybonjour.kDNSServiceType_A,
-										callBack = query_record_callback)
-
+	query_sdRef = pybonjour.DNSServiceQueryRecord(
+		interfaceIndex = interfaceIndex,
+		fullname = hosttarget,
+		rrtype = pybonjour.kDNSServiceType_A,
+		callBack = query_record_callback)
 	try:
 		while not queried:
 			ready = select.select([query_sdRef], [], [], timeout)
@@ -76,28 +80,23 @@ def resolve_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
 			queried.pop()
 	finally:
 		query_sdRef.close()
-
 	resolved.append(True)
-
 
 def browse_callback(sdRef, flags, interfaceIndex, errorCode, serviceName,
 					regtype, replyDomain):
 	if errorCode != pybonjour.kDNSServiceErr_NoError:
 		return
-
 	if not (flags & pybonjour.kDNSServiceFlagsAdd):
 		print 'Service removed'
 		return
-
 	print 'Service added; resolving'
-
-	resolve_sdRef = pybonjour.DNSServiceResolve(0,
-												interfaceIndex,
-												serviceName,
-												regtype,
-												replyDomain,
-												resolve_callback)
-
+	resolve_sdRef = pybonjour.DNSServiceResolve(
+		0,
+		interfaceIndex,
+		serviceName,
+		regtype,
+		replyDomain,
+		resolve_callback)
 	try:
 		while not resolved:
 			ready = select.select([resolve_sdRef], [], [], timeout)
@@ -110,17 +109,21 @@ def browse_callback(sdRef, flags, interfaceIndex, errorCode, serviceName,
 	finally:
 		resolve_sdRef.close()
 
-
-browse_sdRef = pybonjour.DNSServiceBrowse(regtype = regtype,
-										  callBack = browse_callback)
+browse_sdRefs = []
+for regtype in regtypes:
+ browse_sdRefs.append(pybonjour.DNSServiceBrowse(
+	regtype = regtype,
+	callBack = browse_callback))
 
 try:
 	try:
 		while True:
-			ready = select.select([browse_sdRef], [], [])
-			if browse_sdRef in ready[0]:
-				pybonjour.DNSServiceProcessResult(browse_sdRef)
+			for browse_sdRef in browse_sdRefs:
+				ready = select.select([browse_sdRef], [], [])
+				if browse_sdRef in ready[0]:
+					pybonjour.DNSServiceProcessResult(browse_sdRef)
 	except KeyboardInterrupt:
-		pass
+		print "Stop!"
+		web.join()
 finally:
 	browse_sdRef.close()
