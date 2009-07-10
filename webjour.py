@@ -21,7 +21,19 @@ except ImportError:
 
 import pybonjour
 
-regtypes = ["_http._tcp.", "_https._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp.", "_device-info._tcp.", "_ipp._tcp.", "_smb._tcp.", "_webdav._tcp.", "_webdavs._tcp."]
+regtypes = ["_http._tcp.", "_https._tcp.", 
+	"_daap._tcp.", #iTunes
+	"_rfb._tcp.", #Screenshare
+	"_dpap._tcp.", #iPhoto
+	"_distcc._tcp.", #distributed compilation
+	"_raop._tcp.", #airTunes
+	"_afpoverctp._tcp.", #file sharing
+	"_ssh._tcp.", #remote access
+	"_device-info._tcp.",
+	"_ipp._tcp.", #printer
+	"_smb._tcp.", #windows share
+	"_webdav._tcp.",
+	"_webdavs._tcp."]
 timeout = 5
 resolved = []
 queried = []
@@ -68,10 +80,18 @@ MIME = {
 	'html': 'text/html'
 }
 
-class WebJour(threading.Thread):
+class StopThread(threading.Thread):
+	"""
+	A thread wich can be stopped
+	"""
 	def __init__(self, name="Webjour"):
 		self._stopevent = threading.Event()
 		threading.Thread.__init__(self, name = name)
+	def join(self, timeout=None):
+		self._stopevent.set()
+		threading.Thread.join(self,timeout)
+
+class WebJour(StopThread):
 	def web(self, environ, start_response):
 		setup_testing_defaults(environ)
 		url = urlparse(request_uri(environ))
@@ -99,9 +119,6 @@ class WebJour(threading.Thread):
 		print "Serving on port 8000..."
 		while not self._stopevent.isSet():
 			httpd.handle_request()
-	def join(self, timeout=None):
-		self._stopevent.set()
-		threading.Thread.join(self,timeout)
 
 web = WebJour()
 web.start()
@@ -169,22 +186,33 @@ def browse_callback(sdRef, flags, interfaceIndex, errorCode, serviceName,
 	finally:
 		resolve_sdRef.close()
 
-browse_sdRefs = []
-for regtype in regtypes:
- browse_sdRefs.append(pybonjour.DNSServiceBrowse(
-	regtype = regtype,
-	callBack = browse_callback))
+class BrowseThread(StopThread):
+	def __init__(self, name, browse_sdRef):
+		self.browse_sdRef = browse_sdRef
+		StopThread.__init__(self, name)
+	def run(self):
+		while not self._stopevent.isSet():
+			ready = select.select([self.browse_sdRef], [], [])
+			if self.browse_sdRef in ready[0]:
+				pybonjour.DNSServiceProcessResult(self.browse_sdRef)
 
+browsers = []
+for regtype in regtypes:
+	browse_sdRef= pybonjour.DNSServiceBrowse(
+		regtype = regtype,
+		callBack = browse_callback)
+	browseT = BrowseThread(regtype, browse_sdRef)
+	browsers.append(browseT)
+	browseT.start()
+	print "%s browsing" % regtype
 try:
-	try:
-		while True:
-			for browse_sdRef in browse_sdRefs:
-				ready = select.select([browse_sdRef], [], [])
-				if browse_sdRef in ready[0]:
-					pybonjour.DNSServiceProcessResult(browse_sdRef)
-	except KeyboardInterrupt:
-		print "Stop!"
-		web.join()
-		sys.exit()
-finally:
-	browse_sdRef.close()
+	while True:
+		pass
+except KeyboardInterrupt:
+	print "Stop!"
+	web.join()
+	for b in browsers:
+		b.join()
+	sys.exit()
+
+#browse_sdRef.close()
