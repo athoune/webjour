@@ -13,8 +13,8 @@
 			url: '/webjour',
 			dataType: 'json',
 			success: function(snapshots) {
-				console.debug(snapshots);
-				console.debug(snapshots.length);
+				//console.debug(snapshots);
+				//console.debug(snapshots.length);
 				for(var i=0; i < snapshots.length; i++) {
 					var snapshot = snapshots[i];
 					//console.debug(snapshot.service);
@@ -32,16 +32,17 @@
 					aService.append($('<h3>').addClass(service).text(service));
 					for(var i=0; i< services[service].length; i++) {
 						var host = services[service][i];
-						console.debug('host', host);
+						//console.debug('host', host);
 						aService.append(
 							$('<div>').append($('<a>').attr('href', host.scheme + '://' + host.host + ':' + host.port).text(host.name))
 						);
 					}
 					$('#services').after(aService);
 				}
+				/*
 				for(var host in hosts){
 					$('#hosts').after($('<h3>').addClass(host).text(host));
-				}
+				}*/
 			},
 		});
 	});
