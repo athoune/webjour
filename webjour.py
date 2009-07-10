@@ -4,12 +4,14 @@
 __author__ = "Mathieu Lecarme <mathieu@garambrogne.net>"
 
 from wsgiref.simple_server import make_server
-from wsgiref.util import setup_testing_defaults
+from wsgiref.util import setup_testing_defaults, request_uri
 import threading
-
+from urlparse import urlparse
 import select
 import socket
 import sys
+import httplib
+
 import pybonjour
 
 regtypes = ["_http._tcp.", "_https._tcp.", "_daap._tcp.", "_rfb._tcp.", "_afpoverctp._tcp.", "_ssh._tcp.", "_ipp._tcp.", "_smb._tcp.", "_webdav._tcp.", "_webdavs._tcp."]
@@ -25,11 +27,17 @@ def service_to_url(service):
 		return services[service]
 	return service
 
+def clean_bonjour_name(bjr):
+	return '.'.join(bjr.split('.')[:-4]).replace('\\032', ' ').replace('\\','')
+
 class Page(object):
 	def __init__(self):
 		self.step = 0
 		self.header = """
-<html><head></head><body>
+<html><head>
+<link rel="shortcut icon" type="image/png" href="bonjouricon.jpg" />
+<title>Webjour</title>
+</head><body>
 <ul>
 """
 		self.footer = """
@@ -50,11 +58,14 @@ class Page(object):
 				else:
 					host = value['hosttarget']
 				service = value['fullname'].split('.')[-4][1:]
-				yield ('<li> [%s] <a href="%s://%s:%i">%s</a></li>' % (service, service_to_url(service), host, value['port'], value['hosttarget'])).encode('utf8')
+				yield ('<li> [%s] <a href="%s://%s:%i">%s</a></li>' % (service, service_to_url(service), host, value['port'], clean_bonjour_name(value['fullname']))).encode('utf8')
 		if self.step == 2:
 			self.step += 1
 			yield self.footer
 		
+
+def status(code):
+	return "%i %s" % (code, httplib.responses[code])
 
 class WebJour(threading.Thread):
 	def __init__(self, name="Webjour"):
@@ -62,19 +73,22 @@ class WebJour(threading.Thread):
 		threading.Thread.__init__(self, name = name)
 	def web(self, environ, start_response):
 		setup_testing_defaults(environ)
-
-		status = '200 OK'
-		headers = [('Content-type', 'text/html')]
-
-		start_response(status, headers)
-
+		url = urlparse(request_uri(environ))
+		headers = []
+		if url.path == '/':
+			headers.append(('Content-type', 'text/html'))
+			start_response(status(httplib.OK), headers)
+			return Page()
+		if url.path == '/bonjouricon.jpg':
+			headers.append(('Content-type', 'image/jpg'))
+			start_response(status(httplib.OK), headers)
+			return [open('static/bonjouricon.jpg','rb').read()]
+		start_response(status(httplib.NOT_FOUND), headers)
 		#ret = ["%s: %s\n" % (key, value)
 	  #         for key, value in environ.iteritems()]
-		global services
 		
 		#return [("%s => %s:%i\n" % (key, value['hosttarget'], value['port'])).encode('utf8')
 	    #       for key, value in services.iteritems()]
-		return Page()
 	def run(self):
 		httpd = make_server('', 8000, self.web)
 		print "Serving on port 8000..."
