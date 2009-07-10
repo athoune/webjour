@@ -3,6 +3,7 @@
 <title>Webjour</title>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js"></script>
 <script>
+
 	$(document).ready(function() {
 		var services = {};
 		var hosts = {};
@@ -15,15 +16,29 @@
 				console.debug(snapshots.length);
 				for(var i=0; i < snapshots.length; i++) {
 					var snapshot = snapshots[i];
-					console.debug(snapshot.service);
-					services[snapshot.service] = {};
-					hosts[snapshot.host] = {};
+					//console.debug(snapshot.service);
+					if(! services[snapshot.service]) {
+						services[snapshot.service] = [];
+					}
+					services[snapshot.service].push(snapshot);
+					if(! hosts[snapshot.host]) {
+						hosts[snapshot.host] = [];
+					}
+					hosts[snapshot.host].push(snapshot);
 				}
 				for(var service in services){
-					$('#services').after($('<li>').text(service));
+					var aService = $('<h3>').addClass(service).text(service).append($('<p>'));
+					for(var i=0; i< services[service].length; i++) {
+						var host = services[service][i];
+						console.debug('host', host);
+						aService.append(
+							$('<div>').append($('<a>').attr('href', host.scheme + '://' + host.host + ':' + host.port).text(host.name))
+						);
+					}
+					$('#services').after(aService);
 				}
 				for(var host in hosts){
-					$('#hosts').after($('<li>').text(host));
+					$('#hosts').after($('<h3>').addClass(host).text(host));
 				}
 			},
 		});
@@ -32,11 +47,9 @@
 </head><body>
 <h1>WebJour</h1>
 
-<h2>Services</h2>
-<ul id="services"></ul>
+<h2 id="services">Services</h2>
 
-<h2>Hosts</h2>
-<ul id="hosts"></ul>
+<h2 id="hosts">Hosts</h2>
 
 </body>
 </html>
