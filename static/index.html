@@ -2,6 +2,7 @@
 <link rel="shortcut icon" type="image/png" href="bonjouricon.jpg" />
 <title>Webjour</title>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js"></script>
+<link href="webjour.css" media="screen" rel="stylesheet" type="text/css" />
 <script>
 
 	$(document).ready(function() {
@@ -27,7 +28,8 @@
 					hosts[snapshot.host].push(snapshot);
 				}
 				for(var service in services){
-					var aService = $('<h3>').addClass(service).text(service).append($('<p>'));
+					var aService = $('<p>').addClass('links');
+					aService.append($('<h3>').addClass(service).text(service));
 					for(var i=0; i< services[service].length; i++) {
 						var host = services[service][i];
 						console.debug('host', host);

@@ -1,0 +1,28 @@
+* {
+	font: 10px "Lucida Grande", Lucida, Verdana, sans-serif;
+}
+
+h1 {
+	font-size: 24px;
+	font-weight: bold;
+}
+
+h2 {
+	font-size: 14px;
+	padding-left: 10px;
+	font-weight: bold;
+}
+
+h3 {
+	font-size: 12px;
+	padding-left: 5px;
+	font-weight: bold;
+}
+
+.links {
+	padding-left: 20px;
+}
+
+a {
+	color: gray;
+}
