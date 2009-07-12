@@ -29,12 +29,20 @@
 				}
 				for(var service in services){
 					var aService = $('<p>').addClass('links');
-					aService.append($('<h3>').addClass(service).text(service));
+					var title = $('<h3>').addClass(service).text(services[service][0].desc);
+					if(services[service][0].icon != null)
+						title.prepend($('<img>').attr('src', 'icons/' + services[service][0].icon + '_16x16x32.png'))
+					aService.append(title);
 					for(var i=0; i< services[service].length; i++) {
 						var host = services[service][i];
 						//console.debug('host', host);
+						var line = $('<a>').attr('href', host.scheme + '://' + host.host + ':' + host.port).text(host.name);
+						//if (host.icon != null)
+						//	line.prepend($('<img>').attr('src', 'icons/' + host.icon + '_16x16x32.png'));
 						aService.append(
-							$('<div>').append($('<a>').attr('href', host.scheme + '://' + host.host + ':' + host.port).text(host.name))
+							$('<div>').append(
+								line
+							)
 						);
 					}
 					$('#services').after(aService);
