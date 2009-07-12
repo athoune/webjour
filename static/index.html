@@ -18,15 +18,33 @@
 			title: function() {
 				return this.json.desc;
 			},
-			link: function() {
-				var url = this.json.scheme + '://' + this.json.host + ':' + this.json.port;
-				if((this.json.service == 'http' || this.json.service == 'https') && this.json.txtRecord.path)
+			url: function() {
+				var url = this.json.scheme + '://';
+				if (this.json.txtRecord.u && this.json.txtRecord.p)
+					url += this.json.txtRecord.u + ':' + this.json.txtRecord.p + '@'
+				url += this.json.host + ':' + this.json.port;
+				if((
+					this.json.service == 'http' ||
+					this.json.service == 'https' ||
+					this.json.service == 'afpovertcp' ||
+					this.json.service == 'ftp' ||
+					this.json.service == 'sftp-ssh'||
+					this.json.service == 'smb'
+					) && this.json.txtRecord.path)
 					url += this.json.txtRecord.path;
-				return $('<a>').attr('href', url).text(this.json.name)
+				return url
+			},
+			name: function() {
+				//if(this.json.service == 'dpap')
+				//	return this.json.txtRecord['Machine Name'];
+				return this.json.name;
+			},
+			link: function() {
+				return $('<a>').attr('href', this.url()).text(this.name())
 			},
 			info: function() {
 				if(this.json.service == 'presence')
-					return '"' + this.json.txtRecord.msg + '"';
+					return '"' + this.json.txtRecord.msg + '" (' + this.json.txtRecord.status + ')';
 				return null;
 			},
 			html: function() {
@@ -92,7 +110,8 @@
 
 <h2 id="services">Services</h2>
 
+<!--
 <h2 id="hosts">Hosts</h2>
-
+-->
 </body>
 </html>

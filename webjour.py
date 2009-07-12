@@ -4,6 +4,7 @@
 __author__ = "Mathieu Lecarme <mathieu@garambrogne.net>"
 
 #http://www.simonwheatley.co.uk/2008/04/06/avahi-finder-icons/
+#http://developer.apple.com/networking/bonjour/faq.html
 
 from wsgiref.simple_server import make_server
 from wsgiref.util import setup_testing_defaults, request_uri
@@ -44,7 +45,10 @@ regtypes = [
 	ServiceType("_smb._tcp.", "Windows share"), #windows share
 	ServiceType("_presence._tcp.", "Presence", "com.apple.iChat"),
 	ServiceType("_webdav._tcp.", "Webdav"),
-	ServiceType("_webdavs._tcp.", "Secire webdav")]
+	ServiceType("_webdavs._tcp.", "Secire webdav"),
+	ServiceType("_bittorrent._tcp.", "Bitorrent"),
+	ServiceType("_sftp-ssh._tcp.", "SSH share", 'com.apple.Terminal')
+	]
 typeDico = {}
 for regtype in regtypes:
 	typeDico[regtype.type] = regtype
@@ -63,7 +67,12 @@ services = {}
 ips = {}
 
 def service_to_url(service):
-	services = {'rfb':'vnc', 'afpoverctp':'afp'}
+	services = {
+		'rfb':'vnc',
+		'afpoverctp':'afp',
+		'presence':'xmpp',
+		'sftp-ssh':'sftp'
+	}
 	if service in services:
 		return services[service]
 	return service
