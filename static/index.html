@@ -6,6 +6,37 @@
 <script>
 
 	$(document).ready(function() {
+		var Service = function(json) {
+			this.json = json;
+		}
+		Service.prototype = {
+			icon: function() {
+				if(this.json.icon == null)
+					return null;
+				return $('<img>').attr('src', 'icons/' + this.json.icon + '_16x16x32.png');
+			},
+			title: function() {
+				return this.json.desc;
+			},
+			link: function() {
+				var url = this.json.scheme + '://' + this.json.host + ':' + this.json.port;
+				if((this.json.service == 'http' || this.json.service == 'https') && this.json.txtRecord.path)
+					url += this.json.txtRecord.path;
+				return $('<a>').attr('href', url).text(this.json.name)
+			},
+			info: function() {
+				if(this.json.service == 'presence')
+					return '"' + this.json.txtRecord.msg + '"';
+				return null;
+			},
+			html: function() {
+				var tmp = this.link();
+				var info = this.info();
+				if(info != null)
+					tmp.append(info);
+				return tmp;
+			}
+		}
 		var services = {};
 		var hosts = {};
 		$.ajax({
@@ -36,7 +67,8 @@
 					for(var i=0; i< services[service].length; i++) {
 						var host = services[service][i];
 						//console.debug('host', host);
-						var line = $('<a>').attr('href', host.scheme + '://' + host.host + ':' + host.port).text(host.name);
+						var s = new Service(host);
+						var line = s.html();//$('<a>').attr('href', host.scheme + '://' + host.host + ':' + host.port).text(host.name);
 						//if (host.icon != null)
 						//	line.prepend($('<img>').attr('src', 'icons/' + host.icon + '_16x16x32.png'));
 						aService.append(
