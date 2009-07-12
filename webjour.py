@@ -42,6 +42,17 @@ regtypes = [
 	ServiceType("_smb._tcp.", "Windows share"), #windows share
 	ServiceType("_webdav._tcp.", "Webdav"),
 	ServiceType("_webdavs._tcp.", "Secire webdav")]
+typeDico = {}
+for regtype in regtypes:
+	typeDico[regtype.type] = regtype
+MIME = {
+		'jpg' : 'image/jpg',
+		'png' : 'image/png',
+		'css' : 'text/css',
+		'js'  : 'application/x-javascript',
+		'html': 'text/html'
+	}
+
 timeout = 5
 resolved = []
 queried = []
@@ -60,6 +71,7 @@ def clean_bonjour_name(bjr):
 def snapshot():
 	global services
 	global ips
+	global typeDico
 	snapshots = []
 	for key, value in services.iteritems():
 		print ips
@@ -68,26 +80,21 @@ def snapshot():
 		else:
 			host = value['hosttarget']
 		service = value['fullname'].split('.')[-4][1:]
+		type = '.'.join(value['fullname'].split('.')[-4:-2]) + '.'
 		snapshots.append({
-			'service':service,
+			'service': service,
 			'scheme' : service_to_url(service),
 			'host'   : host,
 			'port'   : value['port'],
 			'name'   : clean_bonjour_name(value['fullname']),
+			'desc'   : typeDico[type].name,
+			'icon'   : typeDico[type].icon
 		})
 	return snapshots
 
 def status(code):
 	return "%i %s" % (code, httplib.responses[code])
 	
-MIME = {
-	'jpg' : 'image/jpg',
-	'png' : 'image/png',
-	'css' : 'text/css',
-	'js'  : 'application/x-javascript',
-	'html': 'text/html'
-}
-
 class StopThread(threading.Thread):
 	"""
 	A thread wich can be stopped
