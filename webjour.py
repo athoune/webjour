@@ -42,6 +42,7 @@ regtypes = [
 	ServiceType("_device-info._tcp.", "Device infos"),
 	ServiceType("_ipp._tcp.", "Printer"), #printer
 	ServiceType("_smb._tcp.", "Windows share"), #windows share
+	ServiceType("_presence._tcp.", "Presence", "com.apple.iChat"),
 	ServiceType("_webdav._tcp.", "Webdav"),
 	ServiceType("_webdavs._tcp.", "Secire webdav")]
 typeDico = {}
@@ -84,15 +85,29 @@ def snapshot():
 		service = value['fullname'].split('.')[-4][1:]
 		type = '.'.join(value['fullname'].split('.')[-4:-2]) + '.'
 		snapshots.append({
-			'service': service,
-			'scheme' : service_to_url(service),
-			'host'   : host,
-			'port'   : value['port'],
-			'name'   : clean_bonjour_name(value['fullname']),
-			'desc'   : typeDico[type].name,
-			'icon'   : typeDico[type].icon
+			'service'  : service,
+			'scheme'   : service_to_url(service),
+			'host'     : host,
+			'port'     : value['port'],
+			'name'     : clean_bonjour_name(value['fullname']),
+			'desc'     : typeDico[type].name,
+			'icon'     : typeDico[type].icon,
+			'txtRecord': value['txtRecord']
 		})
 	return snapshots
+
+def parseText(data):
+	txt = {}
+	while data:
+		length = ord(data[0])
+		item = data[1:length+1].split('=', 1)
+		if item[0] and (item[0] not in txt):
+			if len(item) == 1:
+				txt[item[0]] = None
+			else:
+				txt[item[0]] = item[1]
+		data = data[length+1:]
+	return txt
 
 def status(code):
 	return "%i %s" % (code, httplib.responses[code])
@@ -156,8 +171,9 @@ def resolve_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
 	print '	 fullname	=', fullname
 	print '	 hosttarget =', hosttarget
 	print '	 port		=', port
+	print '	txt		=', parseText(txtRecord)
 	global services
-	services[fullname] = {"fullname":fullname, "hosttarget":hosttarget, "port":port, "txtRecord":txtRecord}
+	services[fullname] = {"fullname":fullname, "hosttarget":hosttarget, "port":port, "txtRecord":parseText(txtRecord)}
 	query_sdRef = pybonjour.DNSServiceQueryRecord(
 		interfaceIndex = interfaceIndex,
 		fullname = hosttarget,
