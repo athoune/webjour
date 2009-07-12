@@ -21,19 +21,27 @@ except ImportError:
 
 import pybonjour
 
-regtypes = ["_http._tcp.", "_https._tcp.", 
-	"_daap._tcp.", #iTunes
-	"_rfb._tcp.", #Screenshare
-	"_dpap._tcp.", #iPhoto
-	"_distcc._tcp.", #distributed compilation
-	"_raop._tcp.", #airTunes
-	"_afpoverctp._tcp.", #file sharing
-	"_ssh._tcp.", #remote access
-	"_device-info._tcp.",
-	"_ipp._tcp.", #printer
-	"_smb._tcp.", #windows share
-	"_webdav._tcp.",
-	"_webdavs._tcp."]
+class ServiceType(object):
+	def __init__(self, type, name, icon = None):
+		self.type = type
+		self.name = name
+		self.icon = icon
+
+regtypes = [
+	ServiceType("_http._tcp.", "Web", 'com.apple.Safari'),
+	ServiceType("_https._tcp.", "Secure web", 'com.apple.Safari'),
+	ServiceType("_daap._tcp.", "iTunes", 'com.apple.iTunes'),
+	ServiceType("_rfb._tcp.", "Screen share", 'com.apple.ScreenSharing'), #Screenshare
+	ServiceType("_dpap._tcp.", "iPhoto", 'com.apple.iPhoto'), #iPhoto
+	ServiceType("_distcc._tcp.", "Distributed computing"), #distributed compilation
+	ServiceType("_raop._tcp.", "airTunes"), #airTunes
+	ServiceType("_afpoverctp._tcp.", "Apple sharing", 'com.apple.Finder'), #file sharing
+	ServiceType("_ssh._tcp.", "Secure shell", 'com.apple.Terminal'), #remote access
+	ServiceType("_device-info._tcp.", "Device infos"),
+	ServiceType("_ipp._tcp.", "Printer"), #printer
+	ServiceType("_smb._tcp.", "Windows share"), #windows share
+	ServiceType("_webdav._tcp.", "Webdav"),
+	ServiceType("_webdavs._tcp.", "Secire webdav")]
 timeout = 5
 resolved = []
 queried = []
@@ -199,7 +207,7 @@ class BrowseThread(StopThread):
 browsers = []
 for regtype in regtypes:
 	browse_sdRef= pybonjour.DNSServiceBrowse(
-		regtype = regtype,
+		regtype = regtype.type,
 		callBack = browse_callback)
 	browseT = BrowseThread(regtype, browse_sdRef)
 	browsers.append(browseT)
