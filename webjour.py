@@ -26,6 +26,8 @@ class ServiceType(object):
 		self.type = type
 		self.name = name
 		self.icon = icon
+	def __repr__(self):
+		return "<service %s>" % self.type
 
 regtypes = [
 	ServiceType("_http._tcp.", "Web", 'com.apple.Safari'),
@@ -33,7 +35,7 @@ regtypes = [
 	ServiceType("_daap._tcp.", "iTunes", 'com.apple.iTunes'),
 	ServiceType("_rfb._tcp.", "Screen share", 'com.apple.ScreenSharing'), #Screenshare
 	ServiceType("_dpap._tcp.", "iPhoto", 'com.apple.iPhoto'), #iPhoto
-	ServiceType("_distcc._tcp.", "Distributed computing"), #distributed compilation
+	ServiceType("_distcc._tcp.", "Distributed computing", 'com.apple.Xcode'), #distributed compilation
 	ServiceType("_raop._tcp.", "airTunes"), #airTunes
 	ServiceType("_afpoverctp._tcp.", "Apple sharing", 'com.apple.Finder'), #file sharing
 	ServiceType("_ssh._tcp.", "Secure shell", 'com.apple.Terminal'), #remote access

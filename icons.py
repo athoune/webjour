@@ -34,7 +34,7 @@ def computers():
 		print computer
 		icns_to_png(computer, FOLDER)
 
-applications = ['iPhoto', 'iTunes', 'Safari', 'Utilities/Terminal', '/System/Library/CoreServices/Screen Sharing', '/System/Library/CoreServices/Finder']
+applications = ['iPhoto', 'iTunes', 'Safari', 'Utilities/Terminal', '/System/Library/CoreServices/Screen Sharing', '/System/Library/CoreServices/Finder', '/Developer/Applications/Xcode']
 
 computers()
 for app in applications:
