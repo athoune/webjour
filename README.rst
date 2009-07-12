@@ -16,6 +16,11 @@ Bonjour binding is done with pybonjour_::
 
   sudo easy-install -U pybonjour
 
+Webjour use OSX's icons, you have to fetch it with a simple command::
+
+  sudo port install libicns
+  ./icons.py
+
 Usage
 -----
 
