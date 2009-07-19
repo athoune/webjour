@@ -130,6 +130,7 @@ class StopThread(threading.Thread):
 	def __init__(self, name="Webjour"):
 		self._stopevent = threading.Event()
 		threading.Thread.__init__(self, name = name)
+		self.daemon = True
 	def join(self, timeout=None):
 		self._stopevent.set()
 		threading.Thread.join(self,timeout)
@@ -236,8 +237,6 @@ class BrowseThread(StopThread):
 			ready = select.select([self.browse_sdRef], [], [])
 			if self.browse_sdRef in ready[0]:
 				pybonjour.DNSServiceProcessResult(self.browse_sdRef)
-			#print "waiting"
-			#time.sleep(120)
 
 web = WebJour()
 browsers = []
@@ -256,10 +255,9 @@ try:
 		time.sleep(15)
 except KeyboardInterrupt:
 	print "Stop!"
+	web.join(15)
 	for b in browsers:
-		"%s is stopping" % b.name
-		b.join()
-	sys.exit()
-	web.join()
+		print "%s is stopping" % b.name
+		b.join(15)
 
 #browse_sdRef.close()
