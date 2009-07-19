@@ -67,6 +67,7 @@ resolved = []
 queried = []
 services = {}
 ips = {}
+service_infos = {}
 
 def service_to_url(service):
 	services = {
@@ -87,12 +88,16 @@ def snapshot():
 	global ips
 	global typeDico
 	snapshots = []
-	for key, value in services.iteritems():
+	keys = services.keys()
+	keys.sort()
+	for key in keys:
+		value = services[key]
 		print ips
 		if value['hosttarget'].endswith('.local.') and value['hosttarget'] in ips:
-			host = ips[value['hosttarget']]
+			host = list(ips[value['hosttarget']])
 		else:
-			host = value['hosttarget']
+			host = [value['hosttarget']]
+		host.sort()
 		service = value['fullname'].split('.')[-4][1:]
 		type = '.'.join(value['fullname'].split('.')[-4:-2]) + '.'
 		snapshots.append({
@@ -167,9 +172,11 @@ class WebJour(StopThread):
 def query_record_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
 						  rrtype, rrclass, rdata, ttl):
 	if errorCode == pybonjour.kDNSServiceErr_NoError:
-		print '	 IP			=', socket.inet_ntoa(rdata)
+		print '	 IP de %s = %s' %  (fullname, socket.inet_ntoa(rdata))
 		global ips
-		ips[fullname] = socket.inet_ntoa(rdata)
+		if fullname not in ips:
+			ips[fullname] = set()
+		ips[fullname].add(socket.inet_ntoa(rdata))
 		queried.append(True)
 
 def resolve_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
@@ -207,26 +214,35 @@ def browse_callback(sdRef, flags, interfaceIndex, errorCode, serviceName,
 		return
 	if not (flags & pybonjour.kDNSServiceFlagsAdd):
 		print 'Service removed %s' % serviceName
+		print interfaceIndex, regtype, replyDomain
 		return
 	print 'Service added; resolving'
-	resolve_sdRef = pybonjour.DNSServiceResolve(
+	for resolve_sdRef in [pybonjour.DNSServiceResolve(
 		0,
 		interfaceIndex,
 		serviceName,
 		regtype,
 		replyDomain,
-		resolve_callback)
-	try:
-		while not resolved:
-			ready = select.select([resolve_sdRef], [], [], timeout)
-			if resolve_sdRef not in ready[0]:
-				print 'Resolve timed out'
-				break
-			pybonjour.DNSServiceProcessResult(resolve_sdRef)
-		else:
-			resolved.pop()
-	finally:
-		resolve_sdRef.close()
+		resolve_callback), 
+		pybonjour.DNSServiceResolve(
+			0,
+			interfaceIndex,
+			"_device-info._tcp.",
+			regtype,
+			replyDomain,
+			resolve_callback)
+		]:
+		try:
+			while not resolved:
+				ready = select.select([resolve_sdRef], [], [], timeout)
+				if resolve_sdRef not in ready[0]:
+					print 'Resolve timed out :', serviceName
+					break
+				pybonjour.DNSServiceProcessResult(resolve_sdRef)
+			else:
+				resolved.pop()
+		finally:
+			resolve_sdRef.close()
 
 class BrowseThread(StopThread):
 	def __init__(self, name, browse_sdRef):
