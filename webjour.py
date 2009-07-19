@@ -224,13 +224,13 @@ def browse_callback(sdRef, flags, interfaceIndex, errorCode, serviceName,
 		regtype,
 		replyDomain,
 		resolve_callback), 
-		pybonjour.DNSServiceResolve(
-			0,
-			interfaceIndex,
-			"_device-info._tcp.",
-			regtype,
-			replyDomain,
-			resolve_callback)
+		#pybonjour.DNSServiceResolve(
+		#	0,
+		#	interfaceIndex,
+		#	"_device-info._tcp.",
+		#	regtype,
+		#	replyDomain,
+		#	resolve_callback)
 		]:
 		try:
 			while not resolved:
