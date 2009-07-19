@@ -15,6 +15,8 @@ import socket
 import sys
 import httplib
 import os.path
+import time
+
 try:
 	import simplejson as json
 except ImportError:
@@ -161,9 +163,6 @@ class WebJour(StopThread):
 		while not self._stopevent.isSet():
 			httpd.handle_request()
 
-web = WebJour()
-web.start()
-
 def query_record_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
 						  rrtype, rrclass, rdata, ttl):
 	if errorCode == pybonjour.kDNSServiceErr_NoError:
@@ -206,7 +205,7 @@ def browse_callback(sdRef, flags, interfaceIndex, errorCode, serviceName,
 	if errorCode != pybonjour.kDNSServiceErr_NoError:
 		return
 	if not (flags & pybonjour.kDNSServiceFlagsAdd):
-		print 'Service removed %' % serviceName
+		print 'Service removed %s' % serviceName
 		return
 	print 'Service added; resolving'
 	resolve_sdRef = pybonjour.DNSServiceResolve(
@@ -237,24 +236,30 @@ class BrowseThread(StopThread):
 			ready = select.select([self.browse_sdRef], [], [])
 			if self.browse_sdRef in ready[0]:
 				pybonjour.DNSServiceProcessResult(self.browse_sdRef)
+			#print "waiting"
+			#time.sleep(120)
 
+web = WebJour()
 browsers = []
-for regtype in regtypes:
-	browse_sdRef= pybonjour.DNSServiceBrowse(
-		regtype = regtype.type,
-		callBack = browse_callback)
-	browseT = BrowseThread(regtype, browse_sdRef)
-	browsers.append(browseT)
-	browseT.start()
-	print "%s browsing" % regtype
+
 try:
+	web.start()
+	for regtype in regtypes:
+		browse_sdRef= pybonjour.DNSServiceBrowse(
+			regtype = regtype.type,
+			callBack = browse_callback)
+		browseT = BrowseThread(regtype, browse_sdRef)
+		browsers.append(browseT)
+		browseT.start()
+		print "%s browsing" % regtype
 	while True:
-		pass
+		time.sleep(15)
 except KeyboardInterrupt:
 	print "Stop!"
-	web.join()
 	for b in browsers:
+		"%s is stopping" % b.name
 		b.join()
 	sys.exit()
+	web.join()
 
 #browse_sdRef.close()
