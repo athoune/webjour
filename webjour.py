@@ -47,7 +47,7 @@ regtypes = [
 	ServiceType("_smb._tcp.", "Windows share"), #windows share
 	ServiceType("_presence._tcp.", "Presence", "com.apple.iChat"),
 	ServiceType("_webdav._tcp.", "Webdav"),
-	ServiceType("_webdavs._tcp.", "Secire webdav"),
+	ServiceType("_webdavs._tcp.", "Secure webdav"),
 	ServiceType("_bittorrent._tcp.", "Bitorrent"),
 	ServiceType("_sftp-ssh._tcp.", "SSH share", 'com.apple.Terminal')
 	]
