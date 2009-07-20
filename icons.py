@@ -18,15 +18,18 @@ def application(name):
 		folder = "%s.app/Contents" % name
 	else:
 		folder = "/Applications/%s.app/Contents" %name
-	plist = plistlib.readPlist("%s/Info.plist" % folder)
-	#CFBundleIdentifier
-	tmp = '/tmp/%s.icns' % plist['CFBundleIdentifier']
-	icon = plist['CFBundleIconFile']
-	if not icon.endswith('.icns'):
-		icon = "%s.icns" % icon
-	shutil.copyfile("%s/Resources/%s" % (folder, icon), tmp)
-	icns_to_png(tmp, FOLDER)
-	#os.rmdir(tmp)
+	try:
+		plist = plistlib.readPlist("%s/Info.plist" % folder)
+		#CFBundleIdentifier
+		tmp = '/tmp/%s.icns' % plist['CFBundleIdentifier']
+		icon = plist['CFBundleIconFile']
+		if not icon.endswith('.icns'):
+			icon = "%s.icns" % icon
+		shutil.copyfile("%s/Resources/%s" % (folder, icon), tmp)
+		icns_to_png(tmp, FOLDER)
+		#os.rmdir(tmp)
+	except IOError:
+		pass
 
 def computers():
 	folders = "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources"
